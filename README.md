@@ -18,21 +18,17 @@ Dentro de cada semestre:
 Se você tem uma nota do primeiro semestre e uma nota do CP do segundo semestre e deseja alcançar uma média anual específica, o programa calculará a nota mínima necessária na GS do segundo semestre para que a média anual desejada seja atingida.
 
 ### Fórmula do Cálculo
-
 1. A contribuição do primeiro semestre para a média anual é calculada como:
-   \[
-   \text{Contribuição do primeiro semestre} = \text{nota do primeiro semestre} \times 0,4
-   \]
 
-2. A contribuição total necessária no segundo semestre é calculada com base na meta anual desejada:
-   \[
-   \text{Nota necessária no segundo semestre} = \frac{\text{meta anual} - \text{contribuição do primeiro semestre}}{0,6}
-   \]
+Contribuição do primeiro semestre = nota do primeiro semestre * 0,4
 
-3. A contribuição do CP no segundo semestre é então subtraída, e o restante é atribuído à GS:
-   \[
-   \text{Nota mínima na GS} = \frac{\text{nota necessária no segundo semestre} - \text{contribuição do CP}}{0,6}
-   \]
+2. A contribuição total necessária para o segundo semestre, com base na meta anual desejada, é calculada como:
+
+Nota necessária no segundo semestre = (meta anual - contribuição do primeiro semestre) / 0,6
+
+3. A contribuição do CP no segundo semestre é subtraída, e o restante é atribuído à GS:
+
+Nota mínima na GS = (nota necessária no segundo semestre - contribuição do CP) / 0,6
 
 ## Como Usar
 
