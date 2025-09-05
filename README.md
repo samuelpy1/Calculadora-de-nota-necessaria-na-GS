@@ -1,4 +1,4 @@
-# FIAP Grade Calculator - Docker Compose Migration
+# Calculadora de nota GS - Docker Compose Migration
 
 ## 📋 Análise do Projeto
 
@@ -18,46 +18,46 @@
 
 ### Arquitetura Futura (Depois)
 ```
-┌─────────────────┐    ┌─────────────────┐
-│     Nginx       │◄───┤   Docker Host   │
-│  (Reverse Proxy)│    │                 │
-└─────────────────┘    └─────────────────┘
-         │                       │
-         ▼                       │
-┌─────────────────┐              │
-│  FastAPI App    │              │
-│  (Container)    │              │
-└─────────────────┘              │
-         │                       │
-         ▼                       │
-┌─────────────────┐              │
-│   SQLite DB     │              │
-│   (Volume)      │◄─────────────┘
-└─────────────────┘
+┌─────────────────────────────────┐
+│         Docker Host             │
+│  ┌─────────────────┐            │
+│  │  FastAPI App    │◄───────────┼─── http://localhost:8000
+│  │  (Container)    │            │
+│  └─────────────────┘            │
+│           │                     │
+│           ▼                     │
+│  ┌─────────────────┐            │
+│  │   SQLite DB     │            │
+│  │   (Volume)      │            │
+│  └─────────────────┘            │
+│                                 │
+│  ┌─────────────────┐            │
+│  │  DB Initializer │            │
+│  │  (Container)    │            │
+│  └─────────────────┘            │
+└─────────────────────────────────┘
 ```
 
 ## 🏗️ Componentes Identificados
 
 ### Serviços:
-1. **fiap-calculator**: Aplicação FastAPI principal
-2. **database-init**: Inicializador do banco de dados
-3. **nginx**: Reverse proxy e load balancer
+1. **app**: Aplicação FastAPI principal
+2. **database**: Inicializador do banco de dados
 
 ### Dependências:
-- `fiap-calculator` depende de `database-init`
-- `nginx` depende de `fiap-calculator`
+- `app` depende de `database` (banco deve ser inicializado primeiro)
 
 ### Estratégia de Containerização:
-- **App**: Container Python com FastAPI
-- **DB**: Volume persistente para SQLite
-- **Proxy**: Container Nginx oficial
+- **App**: Container Python com FastAPI + dependências
+- **Database**: Container Python para inicializar SQLite
+- **Ambos**: Usam imagem oficial `python:3.11-slim`
 
 ## 🚀 Implementação Docker Compose
 
 ### Recursos Implementados:
 
 #### ✅ Definição dos Serviços (0,8 pontos)
-- 3 serviços: `fiap-calculator`, `database-init`, `nginx`
+- 2 serviços: `app`, `database`
 - Cada serviço com configuração específica
 
 #### ✅ Configuração de Redes (0,8 pontos)
@@ -66,7 +66,6 @@
 
 #### ✅ Gerenciamento de Volumes (0,8 pontos)
 - Volume `./data` para persistência do SQLite
-- Mapeamento de configuração do Nginx
 
 #### ✅ Variáveis de Ambiente (0,8 pontos)
 - `DATABASE_URL`: Caminho do banco de dados
@@ -78,11 +77,9 @@
 
 #### ✅ Exposição de Portas (0,8 pontos)
 - Porta 8000: Aplicação FastAPI
-- Porta 80: Nginx (proxy)
 
 #### ✅ Health Checks (0,9 pontos)
 - Health check HTTP para aplicação
-- Health check para Nginx
 - Configuração de intervalos e timeouts
 
 #### ✅ Usuário Sem Privilégios (0,8 pontos)
@@ -184,28 +181,29 @@ docker-compose up -d    # Recria
 # Verificar health check
 docker-compose ps
 # Verificar logs
-docker-compose logs fiap-calculator
+docker-compose logs app
 ```
 
-### Problema: Nginx não consegue conectar
+### Problema: Aplicação não responde na porta 8000
 **Solução:**
 ```bash
-# Verificar rede
-docker network ls
-docker network inspect <network-name>
+# Verificar se container está rodando
+docker-compose ps
+# Verificar logs da aplicação
+docker-compose logs app
 ```
 
 ## 🧪 Testes Completos
 
 ### 1. Teste de Conectividade
 ```bash
-curl http://localhost/
+curl http://localhost:8000/
 # Esperado: {"message": "FIAP Grade Calculator API"}
 ```
 
 ### 2. Teste de Cálculo (CREATE)
 ```bash
-curl -X POST http://localhost/calculate \
+curl -X POST http://localhost:8000/calculate \
      -H "Content-Type: application/json" \
      -d '{
        "nota_1s": 8.0,
@@ -217,17 +215,17 @@ curl -X POST http://localhost/calculate \
 
 ### 3. Teste de Listagem (READ)
 ```bash
-curl http://localhost/calculations
+curl http://localhost:8000/calculations
 ```
 
 ### 4. Teste de Busca por ID (READ)
 ```bash
-curl http://localhost/calculations/1
+curl http://localhost:8000/calculations/1
 ```
 
 ### 5. Verificação do Banco
 ```bash
-docker exec -it fiap-grade-calculator sqlite3 /app/data/grade_calculator.db \
+docker exec -it fiap-calculator-app sqlite3 /app/data/grade_calculator.db \
     "SELECT id, nota_1s, nota_cp_2s, meta_anual, nota_necessaria_gs, materia FROM grade_calculations;"
 ```
 
@@ -235,7 +233,6 @@ docker exec -it fiap-grade-calculator sqlite3 /app/data/grade_calculator.db \
 
 ### Health Checks Disponíveis:
 - **Aplicação**: `http://localhost:8000/`
-- **Nginx**: `http://localhost/health`
 
 ### Logs:
 ```bash
@@ -243,7 +240,7 @@ docker exec -it fiap-grade-calculator sqlite3 /app/data/grade_calculator.db \
 docker-compose logs
 
 # Serviço específico
-docker-compose logs fiap-calculator
+docker-compose logs app
 ```
 
 ## 🎯 Benefícios Alcançados
