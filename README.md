@@ -1,68 +1,269 @@
-# Cálculo de Nota Mínima na GS do Segundo Semestre
+# FIAP Grade Calculator - Docker Compose Migration
 
-Este programa calcula a nota mínima necessária na GS do segundo semestre para atingir uma média anual desejada, considerando as notas do primeiro semestre e do CP do segundo semestre. 
+## 📋 Análise do Projeto
 
-## Estrutura do Cálculo
+### Arquitetura Atual (Antes)
+```
+┌─────────────────┐
+│   Python App    │ ← Execução local
+│   (main.py)     │
+└─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   SQLite DB     │ ← Arquivo local
+│ grade_calc.db   │
+└─────────────────┘
+```
 
-A média anual é composta das notas do primeiro e segundo semestres, com pesos diferentes:
+### Arquitetura Futura (Depois)
+```
+┌─────────────────┐    ┌─────────────────┐
+│     Nginx       │◄───┤   Docker Host   │
+│  (Reverse Proxy)│    │                 │
+└─────────────────┘    └─────────────────┘
+         │                       │
+         ▼                       │
+┌─────────────────┐              │
+│  FastAPI App    │              │
+│  (Container)    │              │
+└─────────────────┘              │
+         │                       │
+         ▼                       │
+┌─────────────────┐              │
+│   SQLite DB     │              │
+│   (Volume)      │◄─────────────┘
+└─────────────────┘
+```
 
-- **Primeiro semestre**: conta com 40% da nota anual.
-- **Segundo semestre**: conta com 60% da nota anual.
-  
-Dentro de cada semestre:
-- **CP** vale 40% da nota do semestre.
-- **GS** vale 60% da nota do semestre.
+## 🏗️ Componentes Identificados
 
-## Exemplo de Uso
+### Serviços:
+1. **fiap-calculator**: Aplicação FastAPI principal
+2. **database-init**: Inicializador do banco de dados
+3. **nginx**: Reverse proxy e load balancer
 
-Se você tem uma nota do primeiro semestre e uma nota do CP do segundo semestre e deseja alcançar uma média anual específica, o programa calculará a nota mínima necessária na GS do segundo semestre para que a média anual desejada seja atingida.
+### Dependências:
+- `fiap-calculator` depende de `database-init`
+- `nginx` depende de `fiap-calculator`
 
-### Fórmula do Cálculo
-1. A contribuição do primeiro semestre para a média anual é calculada como:
+### Estratégia de Containerização:
+- **App**: Container Python com FastAPI
+- **DB**: Volume persistente para SQLite
+- **Proxy**: Container Nginx oficial
 
-Contribuição do primeiro semestre = nota do primeiro semestre * 0,4
+## 🚀 Implementação Docker Compose
 
-2. A contribuição total necessária para o segundo semestre, com base na meta anual desejada, é calculada como:
+### Recursos Implementados:
 
-Nota necessária no segundo semestre = (meta anual - contribuição do primeiro semestre) / 0,6
+#### ✅ Definição dos Serviços (0,8 pontos)
+- 3 serviços: `fiap-calculator`, `database-init`, `nginx`
+- Cada serviço com configuração específica
 
-3. A contribuição do CP no segundo semestre é subtraída, e o restante é atribuído à GS:
+#### ✅ Configuração de Redes (0,8 pontos)
+- Rede customizada `fiap-network` tipo bridge
+- Comunicação interna entre containers
 
-Nota mínima na GS = (nota necessária no segundo semestre - contribuição do CP) / 0,6
+#### ✅ Gerenciamento de Volumes (0,8 pontos)
+- Volume `./data` para persistência do SQLite
+- Mapeamento de configuração do Nginx
 
-## Como Usar
+#### ✅ Variáveis de Ambiente (0,8 pontos)
+- `DATABASE_URL`: Caminho do banco de dados
+- `APP_ENV`: Ambiente da aplicação
+
+#### ✅ Políticas de Restart (0,8 pontos)
+- `unless-stopped`: Para serviços principais
+- `no`: Para inicializador (executa uma vez)
+
+#### ✅ Exposição de Portas (0,8 pontos)
+- Porta 8000: Aplicação FastAPI
+- Porta 80: Nginx (proxy)
+
+#### ✅ Health Checks (0,9 pontos)
+- Health check HTTP para aplicação
+- Health check para Nginx
+- Configuração de intervalos e timeouts
+
+#### ✅ Usuário Sem Privilégios (0,8 pontos)
+- Usuário `appuser` para aplicação
+- Usuário `dbuser` para inicializador
+
+## 📖 Instruções de Uso
 
 ### Pré-requisitos
+- Docker Engine instalado
+- Docker Compose instalado
 
-- Python 3.x instalado
+### Comandos Essenciais
 
-### Execução do Programa
+#### Iniciar todos os serviços:
+```bash
+docker-compose up -d
+```
 
-1. Clone ou copie este código para um arquivo Python, como `calculo_nota.py`.
-2. Execute o arquivo e insira as notas solicitadas:
+#### Ver logs em tempo real:
+```bash
+docker-compose logs -f
+```
 
-    ```bash
-    python calculo_nota.py
-    ```
+#### Parar todos os serviços:
+```bash
+docker-compose down
+```
 
-3. O programa solicitará três valores:
-   - Nota do primeiro semestre
-   - Nota do CP do segundo semestre
-   - Meta de média anual desejada
+#### Rebuild e restart:
+```bash
+docker-compose up --build -d
+```
 
-4. Após inserir esses valores, o programa calculará e exibirá a nota mínima necessária na GS do segundo semestre.
+#### Verificar status dos containers:
+```bash
+docker-compose ps
+```
 
-### Exemplo
+## 🔧 Processo de Deploy
 
-Para uma meta anual de 60, com as seguintes notas:
+### Passo a Passo:
 
-- Nota do primeiro semestre: 49.9
-- Nota do CP do segundo semestre: 81.75
+1. **Preparação**
+   ```bash
+   git clone <repository>
+   cd Calculadora-de-nota-necessaria-na-GS
+   ```
 
-O programa exibirá:
+2. **Build e Deploy**
+   ```bash
+   docker-compose up --build -d
+   ```
 
-Para alcançar uma média anual de 60, você precisa de uma nota mínima de 56.72 na GS do segundo semestre.
+3. **Verificação**
+   ```bash
+   # Verificar containers
+   docker-compose ps
+   
+   # Testar aplicação
+   curl http://localhost/
+   
+   # Testar cálculo
+   curl -X POST http://localhost/calculate \
+        -H "Content-Type: application/json" \
+        -d '{"nota_1s": 8.0, "nota_cp_2s": 7.5, "meta_anual": 8.5}'
+   ```
 
-## Disclaimer
+4. **Verificar Banco de Dados**
+   ```bash
+   # Entrar no container
+   docker exec -it fiap-grade-calculator bash
+   
+   # Verificar banco
+   sqlite3 /app/data/grade_calculator.db "SELECT * FROM grade_calculations;"
+   ```
 
-Este programa é fornecido como uma ferramenta de auxílio para cálculo de notas e não garante precisão absoluta. Certifique-se de revisar todos os resultados e consulte fontes adicionais ou profissionais para validar informações críticas. O autor não se responsabiliza por quaisquer consequências decorrentes de eventuais erros nos cálculos ou no uso do programa.
+## 🔍 Troubleshooting
+
+### Problema: Container não inicia
+**Solução:**
+```bash
+docker-compose logs <service-name>
+docker-compose down && docker-compose up --build
+```
+
+### Problema: Banco de dados não persiste
+**Solução:**
+```bash
+# Verificar volume
+docker volume ls
+docker-compose down -v  # Remove volumes
+docker-compose up -d    # Recria
+```
+
+### Problema: Aplicação não responde
+**Solução:**
+```bash
+# Verificar health check
+docker-compose ps
+# Verificar logs
+docker-compose logs fiap-calculator
+```
+
+### Problema: Nginx não consegue conectar
+**Solução:**
+```bash
+# Verificar rede
+docker network ls
+docker network inspect <network-name>
+```
+
+## 🧪 Testes Completos
+
+### 1. Teste de Conectividade
+```bash
+curl http://localhost/
+# Esperado: {"message": "FIAP Grade Calculator API"}
+```
+
+### 2. Teste de Cálculo (CREATE)
+```bash
+curl -X POST http://localhost/calculate \
+     -H "Content-Type: application/json" \
+     -d '{
+       "nota_1s": 8.0,
+       "nota_cp_2s": 7.5,
+       "meta_anual": 8.5,
+       "materia": "Docker Test"
+     }'
+```
+
+### 3. Teste de Listagem (READ)
+```bash
+curl http://localhost/calculations
+```
+
+### 4. Teste de Busca por ID (READ)
+```bash
+curl http://localhost/calculations/1
+```
+
+### 5. Verificação do Banco
+```bash
+docker exec -it fiap-grade-calculator sqlite3 /app/data/grade_calculator.db \
+    "SELECT id, nota_1s, nota_cp_2s, meta_anual, nota_necessaria_gs, materia FROM grade_calculations;"
+```
+
+## 📊 Monitoramento
+
+### Health Checks Disponíveis:
+- **Aplicação**: `http://localhost:8000/`
+- **Nginx**: `http://localhost/health`
+
+### Logs:
+```bash
+# Todos os serviços
+docker-compose logs
+
+# Serviço específico
+docker-compose logs fiap-calculator
+```
+
+## 🎯 Benefícios Alcançados
+
+- ✅ **Orquestração automatizada**: Docker Compose gerencia todos os serviços
+- ✅ **Escalabilidade**: Fácil replicação e scaling
+- ✅ **Ambientes padronizados**: Mesmo ambiente em dev/test/prod
+- ✅ **Deploy contínuo**: Comandos simples para deploy
+- ✅ **Melhor utilização de recursos**: Containers otimizados
+
+## 📹 Evidências para Vídeo
+
+### Roteiro de Demonstração:
+1. Mostrar arquivos do projeto
+2. Executar `docker-compose up -d`
+3. Verificar containers com `docker-compose ps`
+4. Testar endpoint raiz
+5. Fazer cálculo via POST
+6. Listar todos os cálculos
+7. Buscar cálculo específico
+8. Entrar no container e verificar banco SQLite
+9. Mostrar logs dos serviços
+10. Demonstrar health checks
