@@ -1,5 +1,7 @@
 services:
   app:
+    depends_on:
+      -  database
     build:
       context: .
       dockerfile: Dockerfile
