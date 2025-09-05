@@ -125,5 +125,52 @@ def get_calculation(calculation_id: int, db: Session = Depends(get_db)):
     )
 
 
+@app.delete("/calculations/{calculation_id}", response_model=dict)
+def delete_calculation(calculation_id: int, db: Session = Depends(get_db)):
+    calc = (
+        db.query(GradeCalculation).filter(GradeCalculation.id == calculation_id).first()
+    )
+    if not calc:
+        raise HTTPException(status_code=404, detail="Calculation not found")
+    db.delete(calc)
+    db.commit()
+    return {"detail": "Calculation deleted successfully"}
+
+
+@app.put("/calculations/{calculation_id}", response_model=CalculationResponse)
+def update_calculation(
+    calculation_id: int, request: CalculationRequest, db: Session = Depends(get_db)
+):
+    calc = (
+        db.query(GradeCalculation).filter(GradeCalculation.id == calculation_id).first()
+    )
+    if not calc:
+        raise HTTPException(status_code=404, detail="Calculation not found")
+
+    calc.nota_1s = request.nota_1s
+    calc.nota_cp_2s = request.nota_cp_2s
+    calc.meta_anual = request.meta_anual
+    calc.materia = request.materia
+    calc.nota_necessaria_gs = calcular_gs_minima_para_materia(
+        request.nota_1s, request.nota_cp_2s, request.meta_anual
+    )
+
+    db.commit()
+    db.refresh(calc)
+
+    message = f"Para alcançar uma média anual de {calc.meta_anual}, você precisa de uma nota mínima de {calc.nota_necessaria_gs} na GS do segundo semestre."
+
+    return CalculationResponse(
+        id=calc.id,
+        nota_1s=calc.nota_1s,
+        nota_cp_2s=calc.nota_cp_2s,
+        meta_anual=calc.meta_anual,
+        nota_necessaria_gs=calc.nota_necessaria_gs,
+        materia=calc.materia,
+        created_at=calc.created_at,
+        message=message,
+    )
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

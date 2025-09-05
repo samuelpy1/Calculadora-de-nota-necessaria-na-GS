@@ -209,6 +209,23 @@ curl -X POST http://localhost:8000/calculate \
 curl http://localhost:8000/calculations
 ```
 
+### 4. Teste de Atualização (UPDATE)
+```bash
+curl -X PUT http://localhost:8000/calculations/1 \
+       -H "Content-Type: application/json" \
+       -d '{
+          "nota_1s": 9.0,
+          "nota_cp_2s": 8.5,
+          "meta_anual": 9.0,
+          "materia": "Atualizada"
+       }'
+```
+
+### 5. Teste de Remoção (DELETE)
+```bash
+curl -X DELETE http://localhost:8000/calculations/1
+```
+
 ### 4. Teste de Busca por ID (READ)
 ```bash
 curl http://localhost:8000/calculations/1
