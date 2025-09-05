@@ -1,4 +1,4 @@
-# FIAP Grade Calculator - Docker Compose Migration
+# Calculadora de nota GS - Docker Compose Migration
 
 ## 📋 Análise do Projeto
 
