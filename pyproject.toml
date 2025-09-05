@@ -1,0 +1,12 @@
+[project]
+name = "calculadora-de-nota-necessaria-na-gs"
+version = "0.1.0"
+description = "Calculadora GS"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi == 0.104.1",
+    "uvicorn[standard] == 0.24.0",
+    "sqlalchemy == 2.0.23",
+    "requests == 2.31.0"
+]

@@ -60,16 +60,16 @@
 - 2 serviços: `app`, `database`
 - Cada serviço com configuração específica
 
+
 #### ✅ Configuração de Redes (0,8 pontos)
 - Rede customizada `fiap-network` tipo bridge
 - Comunicação interna entre containers
 
 #### ✅ Gerenciamento de Volumes (0,8 pontos)
-- Volume `./data` para persistência do SQLite
+- Volume: pasta `data` para persistência do SQLite
 
 #### ✅ Variáveis de Ambiente (0,8 pontos)
 - `DATABASE_URL`: Caminho do banco de dados
-- `APP_ENV`: Ambiente da aplicação
 
 #### ✅ Políticas de Restart (0,8 pontos)
 - `unless-stopped`: Para serviços principais
@@ -116,7 +116,7 @@ docker-compose up --build -d
 
 #### Verificar status dos containers:
 ```bash
-docker-compose ps
+docker-compose ps -a
 ```
 
 ## 🔧 Processo de Deploy
@@ -137,10 +137,10 @@ docker-compose ps
 3. **Verificação**
    ```bash
    # Verificar containers
-   docker-compose ps
+   docker-compose ps -a
    
    # Testar aplicação
-   curl http://localhost/
+   curl http://localhost/8000/
    
    # Testar cálculo
    curl -X POST http://localhost/calculate \
@@ -151,10 +151,10 @@ docker-compose ps
 4. **Verificar Banco de Dados**
    ```bash
    # Entrar no container
-   docker exec -it fiap-grade-calculator bash
+   docker exec -it fiap-calculator-app bash
    
    # Verificar banco
-   sqlite3 /app/data/grade_calculator.db "SELECT * FROM grade_calculations;"
+   sqlite3 /data/grade_calculator.db "SELECT * FROM grade_calculations;"
    ```
 
 ## 🔍 Troubleshooting
@@ -162,7 +162,7 @@ docker-compose ps
 ### Problema: Container não inicia
 **Solução:**
 ```bash
-docker-compose logs <service-name>
+docker-compose logs <container-id>
 docker-compose down && docker-compose up --build
 ```
 
@@ -179,18 +179,9 @@ docker-compose up -d    # Recria
 **Solução:**
 ```bash
 # Verificar health check
-docker-compose ps
+docker-compose ps -a
 # Verificar logs
-docker-compose logs app
-```
-
-### Problema: Aplicação não responde na porta 8000
-**Solução:**
-```bash
-# Verificar se container está rodando
-docker-compose ps
-# Verificar logs da aplicação
-docker-compose logs app
+docker-compose logs -f fiap-calculator-app
 ```
 
 ## 🧪 Testes Completos
@@ -225,7 +216,7 @@ curl http://localhost:8000/calculations/1
 
 ### 5. Verificação do Banco
 ```bash
-docker exec -it fiap-calculator-app sqlite3 /app/data/grade_calculator.db \
+docker exec -it fiap-calculator-app sqlite3 ./data/grade_calculator.db \
     "SELECT id, nota_1s, nota_cp_2s, meta_anual, nota_necessaria_gs, materia FROM grade_calculations;"
 ```
 
@@ -240,7 +231,7 @@ docker exec -it fiap-calculator-app sqlite3 /app/data/grade_calculator.db \
 docker-compose logs
 
 # Serviço específico
-docker-compose logs app
+docker-compose logs fiap-calculator-app
 ```
 
 ## 🎯 Benefícios Alcançados
